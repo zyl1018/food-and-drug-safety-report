@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>数说平安 · 公安机关食药犯罪打击七十年答卷</title>
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Microsoft YaHei', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0A0E1A;
+            color: #E8ECF2;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 动态粒子网格背景 Canvas */
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 滚动进度条（霓虹金色） */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00FFAA, #FFC107, #FF00AA);
+            width: 0%;
+            z-index: 9999;
+            transition: width 0.08s linear;
+            box-shadow: 0 0 8px #FFC107;
+        }
+
+        /* 主容器 */
+        .app {
+            max-width: 640px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+            padding: 20px 18px 60px;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .badge-icon {
+            background: linear-gradient(135deg, #1E3A8A, #0A1A2F);
+            display: inline-block;
+            width: 70px;
+            height: 70px;
+            line-height: 76px;
+            border-radius: 60px;
+            color: #FFC107;
+            font-size: 32px;
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 193, 7, 0.6);
+            animation: pulseBorder 2s infinite;
+        }
+        @keyframes pulseBorder {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2); border-color: rgba(255, 193, 7, 0.4);}
+            50% { box-shadow: 0 0 0 8px rgba(255, 193, 7, 0); border-color: rgba(255, 193, 7, 0.8);}
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); border-color: rgba(255, 193, 7, 0.4);}
+        }
+        h1 {
+            font-size: 32px;
+            letter-spacing: 2px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFE6B0, #FFC107);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(255, 193, 7, 0.3);
+        }
+        .sub {
+            color: #8E9DB5;
+            font-size: 14px;
+            margin-top: 6px;
+            letter-spacing: 1px;
+        }
+
+        /* 选项卡 */
+        .tabs {
+            display: flex;
+            background: rgba(16, 26, 46, 0.8);
+            backdrop-filter: blur(12px);
+            border-radius: 60px;
+            padding: 6px;
+            margin: 24px 0 20px;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        .tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            border-radius: 48px;
+            font-weight: 600;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            color: #B0C4DE;
+            font-weight: 500;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #FFC107, #FF8C00);
+            color: #0A0E1A;
+            box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+            font-weight: bold;
+        }
+        .tab-btn i {
+            margin-right: 6px;
+        }
+
+        /* 视图切换 */
+        .view {
+            display: none;
+            animation: fadeInUp 0.5s ease;
+        }
+        .view.active-view {
+            display: block;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+
+        /* 卡片毛玻璃效果 + 霓虹边框 */
+        .card, .case-card, .chart-card, .callout, .tip-card {
+            background: rgba(16, 26, 46, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            padding: 22px 18px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 193, 7, 0.25);
+            transition: all 0.3s ease;
+        }
+        .card:hover, .case-card:hover, .tip-card:hover {
+            transform: translateY(-4px);
+            border-color: #FFC107;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 193, 7, 0.1);
+        }
+        
+        /* 数字卡片网格 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 8px;
+        }
+        .stat-item {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 24px;
+            padding: 18px 8px;
+            text-align: center;
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            transition: all 0.2s;
+        }
+        .stat-item:hover {
+            border-color: #FFC107;
+            background: rgba(0, 0, 0, 0.6);
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFC107, #FFAA00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+        .stat-label {
+            font-size: 13px;
+            color: #B0C4DE;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 章节标题 */
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 32px 0 16px;
+            padding-left: 16px;
+            border-left: 4px solid #FFC107;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #FFE6B0;
+        }
+        .section-title i {
+            color: #FFC107;
+            font-size: 24px;
+        }
+        
+        /* 案例卡片细节 */
+        .case-title {
+            font-weight: 800;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+            color: #FFE6B0;
+        }
+        .tag {
+            background: linear-gradient(135deg, #FFC107, #FF8C00);
+            color: #0A0E1A;
+            font-size: 11px;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-weight: bold;
+        }
+        .data-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px 16px;
+            border-radius: 24px;
+            margin: 12px 0;
+            color: #CBD5E1;
+        }
+        .official-link {
+            margin-top: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 193, 7, 0.15);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+        .official-link a {
+            color: #FFC107;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .official-link a:hover {
+            text-decoration: underline;
+            color: #FFE6B0;
+        }
+        .official-link i {
+            font-size: 12px;
+        }
+
+        /* 防范指南网格 */
+        .tips-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .tip-card {
+            text-align: center;
+            padding: 20px 12px;
+            cursor: default;
+        }
+        .tip-card i {
+            font-size: 32px;
+            color: #FFC107;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .tip-card h4 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #FFE6B0;
+        }
+        .tip-card p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* 倡议区（双色霓虹边框） */
+        .callout {
+            text-align: center;
+            border-image: none;
+            border: 1px solid #FFC107;
+            box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+        }
+        .callout-phone {
+            background: linear-gradient(135deg, #FFC107, #FF8C00);
+            color: #0A0E1A;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 28px;
+            border-radius: 60px;
+            font-weight: 800;
+            font-size: 18px;
+            margin: 16px 0 8px;
+            box-shadow: 0 0 12px rgba(255, 193, 7, 0.6);
+        }
+        .btn-share {
+            background: linear-gradient(135deg, #FFC107, #FF8C00);
+            color: #0A0E1A;
+            border: none;
+            padding: 12px;
+            border-radius: 48px;
+            width: 100%;
+            font-weight: 700;
+            margin-top: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-share:hover {
+            transform: scale(0.98);
+            filter: brightness(1.05);
+            box-shadow: 0 0 12px #FFC107;
+        }
+        
+        /* 页脚 */
+        footer {
+            text-align: center;
+            font-size: 11px;
+            color: #64748B;
+            margin-top: 48px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 193, 7, 0.2);
+        }
+        .emergency {
+            font-size: 13px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #FFC107;
+        }
+
+        /* 滚动淡入动画 */
+        .fade-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1), transform 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        .fade-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 550px) {
+            .stat-number { font-size: 28px; }
+            .case-title { font-size: 16px; }
+            .tips-grid { gap: 12px; }
+            .section-title { font-size: 20px; }
+            .hero h1 { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div class="progress-bar" id="progressBar"></div>
+<div class="app">
+    <div class="header">
+        <div class="badge-icon"><i class="fas fa-shield-alt"></i></div>
+        <h1>数说平安</h1>
+        <div class="sub">公安机关食药犯罪打击纪实 · 2011-2024</div>
+    </div>
+
+    <!-- 选项卡 -->
+    <div class="tabs">
+        <button class="tab-btn active" data-view="overview"><i class="fas fa-chart-line"></i> 总体战果</button>
+        <button class="tab-btn" data-view="cases"><i class="fas fa-folder-open"></i> 典型案例</button>
+        <button class="tab-btn" data-view="stats"><i class="fas fa-chart-pie"></i> 分类数据</button>
+    </div>
+
+    <!-- 视图1：总体战果 -->
+    <div id="view-overview" class="view active-view">
+        <div class="card fade-on-scroll">
+            <div style="text-align:center; margin-bottom:12px;"><i class="fas fa-database" style="color:#FFC107;"></i> <span style="color:#CBD5E1;">基于全国30余起重案汇总</span></div>
+            <div class="stats-grid">
+                <div class="stat-item"><div class="stat-number" id="totalMoney">5.7</div><div class="stat-label">总涉案金额（亿元）</div></div>
+                <div class="stat-item"><div class="stat-number" id="totalArrests">462</div><div class="stat-label">抓获犯罪嫌疑人（人）</div></div>
+                <div class="stat-item"><div class="stat-number" id="totalDens">34</div><div class="stat-label">捣毁黑窝点（个）</div></div>
+                <div class="stat-item"><div class="stat-number" id="totalCases">28</div><div class="stat-label">重大典型案件（起）</div></div>
+            </div>
+        </div>
+        <div class="section-title"><i class="fas fa-chart-column"></i> 四类犯罪涉案金额对比</div>
+        <div class="chart-card fade-on-scroll" id="categoryChart" style="height: 300px;"></div>
+        <div class="section-title"><i class="fas fa-chart-line"></i> 打击力度持续增强</div>
+        <div class="chart-card fade-on-scroll" id="trendChart" style="height: 260px;"></div>
+        <div class="callout fade-on-scroll">
+            <i class="fas fa-bell" style="font-size: 28px;"></i>
+            <h3 style="margin: 12px 0;">警民携手 · 共筑安全防线</h3>
+            <strong style="color:#FFC107;">发现线索请拨打110或12315</strong>
+            <button class="btn-share" id="shareOverview">📢 分享守护数据</button>
+        </div>
+    </div>
+
+    <!-- 视图2：典型案例（含官方通报链接） -->
+    <div id="view-cases" class="view">
+        <div class="case-card fade-on-scroll">
+            <div class="case-title"><i class="fas fa-syringe"></i> 山东济南庞某某非法经营疫苗案 <span class="tag">推动法规修订</span></div>
+            <div class="data-row"><span>📅 2015年侦破</span><span>💰 3.1亿元</span><span>🌍 24个省份</span><span>👮 刑拘202人</span></div>
+            <div>▶ 357名公职人员被问责，直接推动《疫苗流通和预防接种管理条例》修订，守护全国疫苗接种安全。</div>
+            <div class="official-link"><i class="fas fa-external-link-alt"></i> <a href="https://www.spp.gov.cn/zdgz/201610/t20161021_170192.shtml" target="_blank" rel="noopener noreferrer">查看最高检官方通报</a></div>
+        </div>
+        <div class="case-card fade-on-scroll">
+            <div class="case-title"><i class="fas fa-baby-carriage"></i> 上海假冒婴幼儿配方乳粉案 <span class="tag">国务院督办</span></div>
+            <div class="data-row"><span>📅 2014-2015年</span><span>🥫 冒牌奶粉2.26万罐</span><span>💰 350余万元</span></div>
+            <div>▶ 国务院食安办专题通报，问题产品全部追回，守护婴幼儿健康。</div>
+            <div class="official-link"><i class="fas fa-external-link-alt"></i> <a href="http://www.fjrd.gov.cn/ct/3-110331" target="_blank" rel="noopener noreferrer">查看国务院食安办通报</a></div>
+        </div>
+        <div class="case-card fade-on-scroll">
+            <div class="case-title"><i class="fas fa-piggy-bank"></i> 湖北武汉闵某某生猪非法注射沙丁胺醇案</div>
+            <div class="data-row"><span>📅 2013年</span><span>🐷 有毒生猪525头</span><span>💰 3000余万元</span><span>🏭 6个黑窝点</span></div>
+            <div>▶ 公司化运作团伙被全链条摧毁，震慑“瘦肉精”犯罪。</div>
+            <div class="official-link"><i class="fas fa-external-link-alt"></i> <a href="http://www.scio.gov.cn/ztk/xwfb/jjfyr/35152/wqfbh35160/Document/1491642/1491642.htm" target="_blank" rel="noopener noreferrer">查看公安部新闻发布会</a></div>
+        </div>
+        <div class="case-card fade-on-scroll">
+            <div class="case-title"><i class="fas fa-skull-crossbones"></i> 河南民权“5.24”特大病死肉案</div>
+            <div class="data-row"><span>📅 2013年</span><span>🥩 病死牛马肉80余吨</span><span>💰 9000余万元</span><span>🌐 跨7省</span><span>👮 抓获105人</span></div>
+            <div>▶ 公安部统一协调，全链条摧毁犯罪网络。</div>
+            <div class="official-link"><i class="fas fa-external-link-alt"></i> <a href="http://www.scio.gov.cn/ztk/xwfb/jjfyr/35152/wqfbh35160/Document/1491642/1491642.htm" target="_blank" rel="noopener noreferrer">查看公安部新闻发布会</a></div>
+        </div>
+        <div class="case-card fade-on-scroll">
+            <div class="case-title"><i class="fas fa-capsules"></i> 广西柳州“5.17”假药案</div>
+            <div class="data-row"><span>📅 2013年</span><span>💉 假劣人血白蛋白/狂犬疫苗</span><span>💰 2000余万元</span></div>
+            <div>▶ 捣毁窝点4处，抓获18人，挽回生命健康损失。</div>
+        </div>
+        <div class="case-card fade-on-scroll">
+            <div class="case-title"><i class="fas fa-apple-alt"></i> 陕西西安李某等生产销售假牛肉案</div>
+            <div class="data-row"><span>📅 2013年</span><span>🥩 假牛肉17.5吨</span><span>💰 6000余万元</span><span>👮 抓获45人</span></div>
+            <div>▶ 揭露“猪肉冒充牛肉”潜规则，维护消费者权益。</div>
+        </div>
+        <div class="callout fade-on-scroll">
+            <i class="fas fa-gavel"></i> 打击犯罪 守护民生<br>
+            <button class="btn-share" id="shareCases">📋 分享典型案例成果</button>
+        </div>
+    </div>
+
+    <!-- 视图3：分类数据统计 -->
+    <div id="view-stats" class="view">
+        <div class="card fade-on-scroll">
+            <div class="stat-item" style="margin-bottom:12px;"><div class="stat-number">3.1亿</div><div>假劣疫苗案金额占比54%</div></div>
+            <div class="stat-item" style="margin-bottom:12px;"><div class="stat-number">1.1亿</div><div>病死肉/走私肉案金额</div></div>
+            <div class="stat-item" style="margin-bottom:12px;"><div class="stat-number">9031万</div><div>有毒有害食品案金额</div></div>
+            <div class="stat-item"><div class="stat-number">350万</div><div>假冒婴幼儿食品案金额</div></div>
+        </div>
+        <div class="section-title"><i class="fas fa-chart-pie"></i> 案件金额分布</div>
+        <div class="chart-card fade-on-scroll" id="pieChart" style="height: 280px;"></div>
+        <div class="section-title"><i class="fas fa-clock"></i> 时间跨度 · 持续严打</div>
+        <div class="chart-card fade-on-scroll" id="timelineChart" style="height: 200px;"></div>
+        <div class="callout fade-on-scroll">
+            <i class="fas fa-chart-simple"></i> 数据来源：公安部、最高检、公开通报<br>
+            <button class="btn-share" id="shareStats">📊 分享分类战果</button>
+        </div>
+    </div>
+    
+    <!-- 防范指南模块（放在任何视图外，始终可见且符合数据新闻传播性） -->
+    <div class="section-title"><i class="fas fa-shield-virus"></i> 防范指南 · 安全锦囊</div>
+    <div class="tips-grid">
+        <div class="tip-card fade-on-scroll"><i class="fas fa-store"></i><h4>选择正规渠道</h4><p>购买食品、药品请认准正规商超、药店及官方电商平台。</p></div>
+        <div class="tip-card fade-on-scroll"><i class="fas fa-tag"></i><h4>查看标签信息</h4><p>检查生产日期、保质期、批准文号，缺失请勿购买。</p></div>
+        <div class="tip-card fade-on-scroll"><i class="fas fa-chart-line"></i><h4>警惕虚假宣传</h4><p>对“特效药”“纯天然快速减肥”等夸大宣传保持警惕。</p></div>
+        <div class="tip-card fade-on-scroll"><i class="fas fa-phone-alt"></i><h4>积极举报线索</h4><p>发现可疑食药违法行为，立即拨打110或12315。</p></div>
+    </div>
+
+    <footer>
+        <div class="emergency"><i class="fas fa-exclamation-triangle"></i> 紧急举报：110（公安） / 12315（市场监管）</div>
+        <i class="fas fa-database"></i> 数据来源：公安部、最高检、国务院食安办、公开通报案件汇总（2011-2024）<br>
+        <i class="fas fa-gavel"></i> 打击犯罪 · 守护平安 · 人民公安一直在行动<br>
+        第十一届中国数据新闻大赛作品 · 校内选拔
+    </footer>
+</div>
+
+<script>
+    // ==================== 动态背景 Canvas：粒子系统 + 流动网格 ====================
+    const canvas = document.getElementById('bgCanvas');
+    let ctx = canvas.getContext('2d');
+    let width, height;
+    let particles = [];
+    let time = 0;
+    
+    function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        initParticles();
+    }
+    
+    function initParticles() {
+        particles = [];
+        const count = Math.min(100, Math.floor(width * height / 12000));
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 2.5 + 0.8,
+                alpha: Math.random() * 0.6 + 0.2,
+                speedX: (Math.random() - 0.5) * 0.4,
+                speedY: (Math.random() - 0.5) * 0.4,
+                color: `hsl(${45 + Math.random() * 20}, 85%, 60%)`
+            });
+        }
+    }
+    
+    function drawBackground() {
+        // 深色渐变基底
+        const grad = ctx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, '#0A0E1A');
+        grad.addColorStop(1, '#121A2A');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+        
+        // 网格线（科技感）
+        ctx.strokeStyle = 'rgba(255, 193, 7, 0.07)';
+        ctx.lineWidth = 0.6;
+        const step = 45;
+        for (let i = 0; i < width; i += step) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, height);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i % height);
+            ctx.lineTo(width, i % height);
+            ctx.stroke();
+        }
+        
+        // 动态粒子
+        for (let p of particles) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 200, 80, ${p.alpha + Math.sin(time) * 0.1})`;
+            ctx.fill();
+            p.x += p.speedX;
+            p.y += p.speedY;
+            if (p.x < 0) p.x = width;
+            if (p.x > width) p.x = 0;
+            if (p.y < 0) p.y = height;
+            if (p.y > height) p.y = 0;
+        }
+        
+        // 流动光晕扫描（横向）
+        const scanX = (time * 180) % width;
+        ctx.beginPath();
+        ctx.rect(scanX, 0, 2, height);
+        ctx.fillStyle = 'rgba(255, 193, 7, 0.08)';
+        ctx.fill();
+        
+        time += 0.015;
+        requestAnimationFrame(drawBackground);
+    }
+    
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+    });
+    resizeCanvas();
+    drawBackground();
+    
+    // ==================== 原有业务逻辑 ====================
+    function animateNumber(elementId, target, isMoney = false) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        let current = 0;
+        const step = target / 45;
+        const timer = setInterval(() => {
+            current += step;
+            if (current >= target) {
+                if (isMoney) el.innerText = target.toFixed(1);
+                else el.innerText = Math.floor(target);
+                clearInterval(timer);
+            } else {
+                if (isMoney) el.innerText = current.toFixed(1);
+                else el.innerText = Math.floor(current);
+            }
+        }, 20);
+    }
+    animateNumber('totalMoney', 5.7, true);
+    animateNumber('totalArrests', 462);
+    animateNumber('totalDens', 34);
+    animateNumber('totalCases', 28);
+    
+    // 柱状图
+    const categoryChart = echarts.init(document.getElementById('categoryChart'));
+    categoryChart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '8%', right: '5%', top: 15, bottom: 20, containLabel: true },
+        xAxis: { type: 'category', data: ['有毒有害食品', '假劣药品疫苗', '假冒婴幼儿食品', '病死肉/走私肉'], axisLabel: { rotate: 15, color: '#B0C4DE', fontSize: 11 } },
+        yAxis: { type: 'value', name: '涉案金额 (亿元)', nameTextStyle: { color: '#B0C4DE' }, axisLabel: { color: '#B0C4DE' } },
+        series: [{ data: [0.9031, 3.31, 0.35, 1.1], type: 'bar', itemStyle: { color: '#FFC107', borderRadius: [10,10,0,0], shadowColor: 'rgba(255,193,7,0.3)', shadowBlur: 10 }, label: { show: true, position: 'top', color: '#FFE6B0', formatter: '{c} 亿' } }],
+        backgroundColor: 'transparent'
+    });
+    
+    // 折线图
+    const trendChart = echarts.init(document.getElementById('trendChart'));
+    trendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['2011', '2013', '2015', '2017', '2019', '2021', '2023', '2024'], axisLabel: { color: '#B0C4DE' } },
+        yAxis: { type: 'value', name: '重大案件查处指数', nameTextStyle: { color: '#B0C4DE' }, axisLabel: { color: '#B0C4DE' } },
+        series: [{ data: [8, 22, 36, 44, 51, 58, 67, 72], type: 'line', smooth: true, lineStyle: { color: '#FFC107', width: 3, shadowBlur: 8, shadowColor: '#FFC107' }, symbol: 'circle', symbolSize: 8, areaStyle: { opacity: 0.15, color: '#FFC107' }, label: { show: true, color: '#FFC107' } }],
+        backgroundColor: 'transparent'
+    });
+    
+    // 饼图
+    const pieChart = echarts.init(document.getElementById('pieChart'));
+    pieChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left', textStyle: { color: '#CBD5E1' } },
+        series: [{
+            type: 'pie', radius: '55%', data: [
+                { name: '假劣药品/疫苗', value: 3.31, itemStyle: { color: '#FFC107' } },
+                { name: '病死肉/走私肉', value: 1.1, itemStyle: { color: '#FF8C00' } },
+                { name: '有毒有害食品', value: 0.9031, itemStyle: { color: '#F4A261' } },
+                { name: '假冒婴幼儿食品', value: 0.35, itemStyle: { color: '#E9C46A' } }
+            ], label: { formatter: '{b}: {d}%', color: '#CBD5E1' }
+        }],
+        backgroundColor: 'transparent'
+    });
+    
+    // 时间轴柱状图
+    const timelineChart = echarts.init(document.getElementById('timelineChart'));
+    timelineChart.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['2011', '2013', '2015', '2016', '2023', '2024'], axisLabel: { rotate: 30, color: '#B0C4DE' } },
+        yAxis: { type: 'value', name: '典型重案数（起）', nameTextStyle: { color: '#B0C4DE' }, axisLabel: { color: '#B0C4DE' } },
+        series: [{ data: [3, 6, 8, 7, 5, 5], type: 'bar', itemStyle: { color: '#FFC107', borderRadius: [6,6,0,0] }, label: { show: true, color: '#FFE6B0' } }],
+        backgroundColor: 'transparent'
+    });
+    
+    // 选项卡切换逻辑
+    const btns = document.querySelectorAll('.tab-btn');
+    const views = { overview: document.getElementById('view-overview'), cases: document.getElementById('view-cases'), stats: document.getElementById('view-stats') };
+    function switchView(viewId) {
+        Object.keys(views).forEach(key => { views[key].classList.remove('active-view'); });
+        views[viewId].classList.add('active-view');
+        setTimeout(() => {
+            if (categoryChart) categoryChart.resize();
+            if (trendChart) trendChart.resize();
+            if (pieChart) pieChart.resize();
+            if (timelineChart) timelineChart.resize();
+        }, 100);
+    }
+    btns.forEach(btn => btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        switchView(btn.getAttribute('data-view'));
+    }));
+    
+    // 滚动淡入观察
+    const fadeElements = document.querySelectorAll('.fade-on-scroll');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); } });
+    }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' });
+    fadeElements.forEach(el => observer.observe(el));
+    
+    // 滚动进度条
+    window.addEventListener('scroll', () => {
+        const winScroll = document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - window.innerHeight;
+        const scrolled = (winScroll / height) * 100;
+        document.getElementById('progressBar').style.width = scrolled + '%';
+    });
+    
+    // 分享按钮
+    document.getElementById('shareOverview')?.addEventListener('click', () => { navigator.clipboard.writeText('📢 公安食药犯罪打击成果：涉案总金额5.7亿元，抓获462人！守护舌尖安全，发现线索请拨打110或12315。为平安中国点赞！'); alert('✅ 已复制，欢迎分享！'); });
+    document.getElementById('shareCases')?.addEventListener('click', () => { navigator.clipboard.writeText('🔍 典型案例：山东疫苗案推动法规修订，上海假奶粉案全部追回，武汉生猪案端掉6个黑窝点。公安机关重拳出击！'); alert('✅ 已复制案例金句'); });
+    document.getElementById('shareStats')?.addEventListener('click', () => { navigator.clipboard.writeText('📊 食药犯罪涉案金额分布：假劣疫苗占54%，病死肉19%，有毒食品16%，假冒婴幼儿食品6%。严打仍在继续！'); alert('✅ 已复制统计数据'); });
+    
+    window.addEventListener('resize', () => { categoryChart.resize(); trendChart.resize(); pieChart.resize(); timelineChart.resize(); });
+</script>
+</body>
+</html>
